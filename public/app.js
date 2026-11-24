@@ -13,9 +13,6 @@
     watch: {
       video: null,
       selectedMirrorIdx: 0,
-      selectedQuality: "ALL",
-      selectedHost: "",
-      forceMode: "auto", // auto | video | iframe
       comments: [],
       nextCursor: null,
       hasMore: false,
@@ -124,7 +121,7 @@
                 </div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;">
                   <a class="btn-primary" href="${featured.type === "episode" ? `#watch/${encodeURIComponent(featured.slug)}` : `#anime/${encodeURIComponent(featured.slug)}`}">
-                    ▶ ${featured.type === "episode" ? "Tonton Sekarang" : "Lihat Detail Anime"}
+                    ▶ ${featured.type === "episode" ? "Tonton Trailer & Info" : "Lihat Detail Anime"}
                   </a>
                   <a class="btn-secondary" href="#schedule">Lihat Jadwal Rilis</a>
                 </div>
@@ -137,7 +134,7 @@
       const episodesHtml = (d.episodes && d.episodes.length)
         ? `
           <div class="sec-head">
-            <h2 class="sec-title">Episode Terbaru</h2>
+            <h2 class="sec-title">Sedang Tayang (Ongoing)</h2>
             <span class="sec-sub">Halaman ${d.page}${d.totalPages ? ` dari ${d.totalPages}` : ""}</span>
           </div>
           <div class="anime-grid">${d.episodes.map((ep) => renderCard(ep, "episode")).join("")}</div>
@@ -147,7 +144,7 @@
       const animeHtml = (d.anime && d.anime.length)
         ? `
           <div class="sec-head">
-            <h2 class="sec-title">Koleksi Anime Pilihan</h2>
+            <h2 class="sec-title">Koleksi Anime Populer</h2>
             <a href="#discover" class="btn-secondary">Lihat Semua →</a>
           </div>
           <div class="anime-grid">${d.anime.map((a) => renderCard(a, "anime")).join("")}</div>
@@ -228,11 +225,11 @@
                   <div class="info-cell"><span>Total Episode</span><strong>${esc(a.episodeCount || (a.episodes ? a.episodes.length : "—"))}</strong></div>
                   <div class="info-cell"><span>Durasi</span><strong>${esc(a.duration || "—")}</strong></div>
                   <div class="info-cell"><span>Studio</span><strong>${esc(a.studio || "—")}</strong></div>
-                  <div class="info-cell"><span>Sutradara</span><strong>${esc(a.director || "—")}</strong></div>
+                  <div class="info-cell"><span>Sumber</span><strong>${esc(a.director || "—")}</strong></div>
                   <div class="info-cell"><span>Produser</span><strong>${esc(a.producer || "—")}</strong></div>
-                  <div class="info-cell"><span>Subtitle</span><strong>${esc(a.subtitle || "Indonesia")}</strong></div>
-                  <div class="info-cell"><span>Fansub</span><strong>${esc(a.fansub || "—")}</strong></div>
-                  <div class="info-cell"><span>Slug</span><strong>${esc(a.slug)}</strong></div>
+                  <div class="info-cell"><span>Subtitle</span><strong>${esc(a.subtitle || "Resmi")}</strong></div>
+                  <div class="info-cell"><span>Platform</span><strong>${esc(a.fansub || "—")}</strong></div>
+                  <div class="info-cell"><span>ID / Slug</span><strong>${esc(a.slug)}</strong></div>
                 </div>
               </div>
             </div>
@@ -295,51 +292,6 @@
 
   /* --------------------------------------------------- 3. WATCH EPISODE */
 
-  function applyHostFallback(rawUrl, fallbackHost) {
-    if (!rawUrl || !fallbackHost) return rawUrl;
-    try {
-      const target = new URL(rawUrl);
-      const cleanHost = String(fallbackHost).trim();
-      if (/^https?:\/\//i.test(cleanHost)) {
-        const replacement = new URL(cleanHost);
-        target.protocol = replacement.protocol;
-        target.host = replacement.host;
-      } else {
-        target.host = cleanHost.replace(/^\/+|\/+$/g, "");
-      }
-      return target.toString();
-    } catch (e) {
-      return rawUrl;
-    }
-  }
-
-  function extractFallbackHosts(video) {
-    const hosts = [];
-    const seen = new Set();
-    const pushHost = (val) => {
-      if (!val) return;
-      const h = typeof val === "string" ? val : (val.host || val.url || val.domain || "");
-      if (h && !seen.has(h)) {
-        seen.add(h);
-        hosts.push(h);
-      }
-    };
-    (video.hostFallbacks || []).forEach(pushHost);
-    const groups = video.hostFallbackGroups || [];
-    if (Array.isArray(groups)) {
-      groups.forEach((g) => {
-        if (Array.isArray(g)) g.forEach(pushHost);
-        else if (g && Array.isArray(g.hosts)) g.hosts.forEach(pushHost);
-        else pushHost(g);
-      });
-    } else if (groups && typeof groups === "object") {
-      Object.values(groups).forEach((arr) => {
-        if (Array.isArray(arr)) arr.forEach(pushHost);
-      });
-    }
-    return hosts;
-  }
-
   function renderActivePlayer() {
     const shell = document.getElementById("videoPlayerShell");
     const directBtn = document.getElementById("btnOpenMirrorExternal");
@@ -350,45 +302,34 @@
     const mirror = mirrors[appState.watch.selectedMirrorIdx];
 
     if (!mirror || !mirror.url) {
-      shell.innerHTML = `<div class="player-empty"><strong>Mirror video tidak tersedia untuk episode ini.</strong><p>Coba muat ulang mirror atau buka halaman sumber asli.</p></div>`;
       if (directBtn) directBtn.classList.add("hidden");
+      const ytSearch = v.youtubeSearchUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(v.title || "anime trailer")}`;
+      shell.innerHTML = `
+        <div class="player-empty" style="background:linear-gradient(rgba(9,11,16,0.78),rgba(9,11,16,0.92)), url('${esc(v.poster || "")}') center/cover no-repeat;">
+          <strong style="color:#fff; font-size:1.02rem; margin-bottom:6px;">Trailer Embed Tidak Tersedia untuk Judul Ini</strong>
+          <p style="font-size:0.84rem; max-width:440px; margin-bottom:14px;">
+            Gunakan tombol platform resmi di bawah atau cari rilis resmi (Muse Indonesia / Ani-One) di YouTube.
+          </p>
+          <a class="btn-primary" href="${esc(ytSearch)}" target="_blank" rel="noopener">Cari di YouTube Resmi ↗</a>
+        </div>
+      `;
       return;
     }
 
-    const finalUrl = appState.watch.selectedHost
-      ? applyHostFallback(mirror.url, appState.watch.selectedHost)
-      : mirror.url;
-
     if (directBtn) {
-      directBtn.href = finalUrl;
+      directBtn.href = mirror.url;
       directBtn.classList.remove("hidden");
     }
 
-    const isDirectVideo =
-      /\.mp4(\?|$)|\.webm(\?|$)/i.test(finalUrl) ||
-      /mp4|direct|video|html5/i.test(String(mirror.type || ""));
-
-    const useVideoTag =
-      appState.watch.forceMode === "video" ||
-      (appState.watch.forceMode === "auto" && isDirectVideo);
-
-    if (useVideoTag) {
-      shell.innerHTML = `
-        <video controls autoplay playsinline referrerpolicy="no-referrer" poster="${esc(v.poster || "")}">
-          <source src="${esc(finalUrl)}" type="video/mp4" />
-          Browser tidak mendukung tag video HTML5.
-        </video>
-      `;
-    } else {
-      shell.innerHTML = `
-        <iframe
-          src="${esc(finalUrl)}"
-          allowfullscreen
-          allow="autoplay; fullscreen; picture-in-picture"
-          referrerpolicy="no-referrer"
-        ></iframe>
-      `;
-    }
+    shell.innerHTML = `
+      <iframe
+        src="${esc(mirror.url)}"
+        title="${esc(v.title || "Video Player")}"
+        allowfullscreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    `;
   }
 
   async function loadWatchComments(episodeId, cursor, append) {
@@ -417,31 +358,26 @@
       appState.watch.hasMore = !!d.hasMore;
       appState.watch.totalComments = d.total || appState.watch.comments.length;
 
-      if (countEl) countEl.textContent = `${appState.watch.totalComments} Komentar`;
+      if (countEl) countEl.textContent = `${appState.watch.totalComments} Ulasan`;
 
       if (!appState.watch.comments.length) {
-        box.innerHTML = `<p style="color:var(--text-muted); font-size:0.86rem;">Belum ada komentar pada episode ini.</p>`;
+        box.innerHTML = `<p style="color:var(--text-muted); font-size:0.86rem;">Belum ada ulasan komunitas untuk anime ini.</p>`;
       } else {
-        box.innerHTML = appState.watch.comments.map((c) => {
-          const author = c.author || (c.user && (c.user.name || c.user.username)) || c.username || "Penonton";
-          const date = c.createdAt || c.date || c.timeAgo || "";
-          const body = c.content || c.text || c.body || c.message || "";
-          return `
-            <div class="comment-row">
-              <div class="comment-meta">
-                <span>${esc(author)}</span>
-                <span>${esc(date)}</span>
-              </div>
-              <div class="comment-body">${esc(body)}</div>
+        box.innerHTML = appState.watch.comments.map((c) => `
+          <div class="comment-row">
+            <div class="comment-meta">
+              <span>${esc(c.author || "Penonton")}</span>
+              <span>${esc(c.date || "")}</span>
             </div>
-          `;
-        }).join("");
+            <div class="comment-body">${esc(c.text || "")}</div>
+          </div>
+        `).join("");
       }
 
       if (moreBtn) {
         moreBtn.classList.toggle("hidden", !appState.watch.hasMore || !appState.watch.nextCursor);
         moreBtn.disabled = false;
-        moreBtn.textContent = "Muat Komentar Lainnya";
+        moreBtn.textContent = "Muat Ulasan Lainnya";
       }
     } catch (err) {
       box.innerHTML = `<p style="color:var(--accent); font-size:0.86rem;">${esc(err.message)}</p>`;
@@ -450,7 +386,7 @@
 
   async function viewWatch(slug) {
     setActiveNav("home");
-    renderSkeleton("Menyiapkan Video & Server Mirror...");
+    renderSkeleton("Menyiapkan Pemutar & Tautan Resmi...");
 
     try {
       const res = await fetch(`/api/watch?slug=${encodeURIComponent(slug)}`);
@@ -461,9 +397,6 @@
       appState.watch = {
         video,
         selectedMirrorIdx: 0,
-        selectedQuality: "ALL",
-        selectedHost: "",
-        forceMode: "auto",
         comments: [],
         nextCursor: null,
         hasMore: false,
@@ -471,10 +404,7 @@
       };
 
       const mirrors = video.mirrors || [];
-      const qualities = video.qualityOptions && video.qualityOptions.length
-        ? video.qualityOptions
-        : Array.from(new Set(mirrors.map((m) => m.quality).filter(Boolean)));
-      const fallbacks = extractFallbackHosts(video);
+      const externalStreams = video.externalStreams || [];
       const playlistEps = (playlist && playlist.episodes) || [];
 
       root.innerHTML = `
@@ -488,7 +418,7 @@
                   <div>
                     <h1 style="font-family:'Outfit',sans-serif; font-size:1.3rem; line-height:1.25;">${esc(video.title || video.slug || `Episode #${video.id}`)}</h1>
                     <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; display:flex; flex-wrap:wrap; gap:10px;">
-                      <span>Episode ID: <strong>${esc(video.id)}</strong></span>
+                      <span>ID: <strong>${esc(video.id)}</strong></span>
                       ${video.episode ? `<span>Episode <strong>${esc(video.episode)}${video.total ? ` / ${esc(video.total)}` : ""}</strong></span>` : ""}
                       ${video.duration ? `<span>Durasi: <strong>${esc(video.duration)}</strong></span>` : ""}
                     </div>
@@ -500,54 +430,50 @@
                   </div>
                 </div>
 
-                ${qualities.length ? `
+                ${mirrors.length ? `
                   <div class="mirror-section">
-                    <div class="mirror-label">Filter Kualitas Video</div>
-                    <div class="mirror-chips" id="qualityChips">
-                      <button type="button" class="mirror-btn active" data-quality="ALL">Semua</button>
-                      ${qualities.map((q) => `<button type="button" class="mirror-btn" data-quality="${esc(q)}">${esc(q)}</button>`).join("")}
-                    </div>
+                    <div class="mirror-label">Pemutar Embed Tersedia (${mirrors.length})</div>
+                    <div class="mirror-chips" id="mirrorChips"></div>
                   </div>
                 ` : ""}
 
                 <div class="mirror-section">
-                  <div class="mirror-label">Pilih Server Mirror (${mirrors.length} Tersedia)</div>
-                  <div class="mirror-chips" id="mirrorChips"></div>
+                  <div class="mirror-label">Tonton Full Episode di Platform Resmi (Buka Tab Baru)</div>
+                  <div class="mirror-chips">
+                    ${externalStreams.map((st) => `
+                      <a class="mirror-btn" href="${esc(st.url)}" target="_blank" rel="noopener">
+                        ${esc(st.site)} ↗
+                      </a>
+                    `).join("")}
+                    ${video.youtubeSearchUrl ? `
+                      <a class="mirror-btn" href="${esc(video.youtubeSearchUrl)}" target="_blank" rel="noopener">
+                        Cari di YouTube ↗
+                      </a>
+                    ` : ""}
+                  </div>
                 </div>
 
-                ${fallbacks.length ? `
-                  <div class="mirror-section">
-                    <div class="mirror-label">Host Fallback Cadangan (Jika video gagal/buffer)</div>
-                    <div class="mirror-chips" id="fallbackChips">
-                      <button type="button" class="mirror-btn active" data-host="">Host Default</button>
-                      ${fallbacks.map((h) => `<button type="button" class="mirror-btn" data-host="${esc(h)}">${esc(h)}</button>`).join("")}
-                    </div>
-                  </div>
-                ` : ""}
-
                 <div style="display:flex; flex-wrap:wrap; gap:8px; padding-top:10px; border-top:1px solid var(--border-subtle);">
-                  <button type="button" class="btn-secondary" id="btnTogglePlayerMode">Mode Player: Otomatis</button>
-                  <button type="button" class="btn-secondary" id="btnRefreshMirrors">Muat Ulang Mirror</button>
-                  <a id="btnOpenMirrorExternal" class="btn-secondary hidden" href="#" target="_blank" rel="noopener">Buka Stream Langsung ↗</a>
-                  ${video.url ? `<a class="btn-secondary" href="${esc(video.url)}" target="_blank" rel="noopener">Halaman Sokuja ↗</a>` : ""}
+                  <a id="btnOpenMirrorExternal" class="btn-secondary hidden" href="#" target="_blank" rel="noopener">Buka Video di YouTube ↗</a>
+                  ${video.url ? `<a class="btn-secondary" href="${esc(video.url)}" target="_blank" rel="noopener">Halaman AniList ↗</a>` : ""}
                 </div>
               </div>
 
               <section class="comments-card">
                 <div class="sec-head" style="margin-bottom:8px;">
-                  <h2 class="sec-title">Komentar Episode</h2>
+                  <h2 class="sec-title">Ulasan &amp; Komentar</h2>
                   <span id="commentsCountBadge" class="pill">Memuat...</span>
                 </div>
                 <div id="watchCommentsBox"></div>
                 <div style="margin-top:14px; text-align:center;">
-                  <button type="button" id="btnLoadMoreComments" class="btn-secondary hidden">Muat Komentar Lainnya</button>
+                  <button type="button" id="btnLoadMoreComments" class="btn-secondary hidden">Muat Ulasan Lainnya</button>
                 </div>
               </section>
             </div>
 
             <aside class="playlist-box">
               <div class="sec-head" style="margin-bottom:6px;">
-                <h2 class="sec-title" style="font-size:1.1rem;">Playlist Episode</h2>
+                <h2 class="sec-title" style="font-size:1.1rem;">Daftar Episode</h2>
                 <span class="pill">${playlistEps.length}</span>
               </div>
               <div class="playlist-list">
@@ -563,7 +489,7 @@
                         </a>
                       `;
                     }).join("")
-                  : `<p style="color:var(--text-muted); font-size:0.84rem; padding:10px 0;">Playlist episode tidak tersedia. Gunakan tombol Detail Anime untuk daftar lengkap.</p>`
+                  : `<p style="color:var(--text-muted); font-size:0.84rem; padding:10px 0;">Daftar episode tidak tersedia.</p>`
                 }
               </div>
             </aside>
@@ -571,101 +497,27 @@
         </div>
       `;
 
-      function drawMirrorButtons() {
-        const container = document.getElementById("mirrorChips");
-        const qFilter = appState.watch.selectedQuality;
-        const filteredIndices = [];
-        mirrors.forEach((m, idx) => {
-          if (qFilter === "ALL" || String(m.quality || "").toLowerCase() === qFilter.toLowerCase()) {
-            filteredIndices.push(idx);
-          }
-        });
-
-        if (!filteredIndices.length) {
-          container.innerHTML = `<span style="font-size:0.82rem; color:var(--text-muted);">Tidak ada server untuk kualitas ini.</span>`;
-          return;
-        }
-
-        if (!filteredIndices.includes(appState.watch.selectedMirrorIdx)) {
-          appState.watch.selectedMirrorIdx = filteredIndices[0];
-        }
-
-        container.innerHTML = filteredIndices.map((idx) => {
-          const m = mirrors[idx];
-          const active = idx === appState.watch.selectedMirrorIdx ? "active" : "";
-          return `
-            <button type="button" class="mirror-btn ${active}" data-mirror-idx="${idx}">
-              ${esc(m.server || `Server ${idx + 1}`)} ${m.quality ? `• ${esc(m.quality)}` : ""} ${m.type ? `(${esc(m.type)})` : ""}
+      const mirrorContainer = document.getElementById("mirrorChips");
+      if (mirrorContainer && mirrors.length) {
+        const drawMirrors = () => {
+          mirrorContainer.innerHTML = mirrors.map((m, idx) => `
+            <button type="button" class="mirror-btn ${idx === appState.watch.selectedMirrorIdx ? "active" : ""}" data-mirror-idx="${idx}">
+              ${esc(m.server)} • ${esc(m.quality || "HD")}
             </button>
-          `;
-        }).join("");
+          `).join("");
 
-        container.querySelectorAll("[data-mirror-idx]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            appState.watch.selectedMirrorIdx = +btn.dataset.mirrorIdx;
-            drawMirrorButtons();
-            renderActivePlayer();
+          mirrorContainer.querySelectorAll("[data-mirror-idx]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              appState.watch.selectedMirrorIdx = +btn.dataset.mirrorIdx;
+              drawMirrors();
+              renderActivePlayer();
+            });
           });
-        });
+        };
+        drawMirrors();
       }
 
-      drawMirrorButtons();
       renderActivePlayer();
-
-      const qChips = document.getElementById("qualityChips");
-      if (qChips) {
-        qChips.querySelectorAll("[data-quality]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            qChips.querySelectorAll(".mirror-btn").forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-            appState.watch.selectedQuality = btn.dataset.quality;
-            drawMirrorButtons();
-            renderActivePlayer();
-          });
-        });
-      }
-
-      const fChips = document.getElementById("fallbackChips");
-      if (fChips) {
-        fChips.querySelectorAll("[data-host]").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            fChips.querySelectorAll(".mirror-btn").forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-            appState.watch.selectedHost = btn.dataset.host;
-            renderActivePlayer();
-          });
-        });
-      }
-
-      const modeBtn = document.getElementById("btnTogglePlayerMode");
-      modeBtn.addEventListener("click", () => {
-        const order = ["auto", "video", "iframe"];
-        const labels = { auto: "Mode Player: Otomatis", video: "Mode Player: HTML5 Video", iframe: "Mode Player: Iframe Embed" };
-        const next = order[(order.indexOf(appState.watch.forceMode) + 1) % order.length];
-        appState.watch.forceMode = next;
-        modeBtn.textContent = labels[next];
-        renderActivePlayer();
-      });
-
-      document.getElementById("btnRefreshMirrors").addEventListener("click", async () => {
-        const btn = document.getElementById("btnRefreshMirrors");
-        btn.disabled = true;
-        btn.textContent = "Memuat...";
-        try {
-          const r = await fetch(`/api/watch?slug=${encodeURIComponent(video.id)}&only=mirrors`);
-          const j = await r.json();
-          if (j.ok && j.data) {
-            appState.watch.video.mirrors = j.data.mirrors || [];
-            mirrors.length = 0;
-            mirrors.push(...appState.watch.video.mirrors);
-            drawMirrorButtons();
-            renderActivePlayer();
-          }
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Muat Ulang Mirror";
-        }
-      });
 
       document.getElementById("btnLoadMoreComments").addEventListener("click", () => {
         if (appState.watch.nextCursor) {
@@ -731,7 +583,7 @@
         <div class="container">
           <div class="sec-head">
             <h2 class="sec-title">Jelajah Katalog &amp; Genre</h2>
-            <span class="sec-sub">${genres.length} Genre Tersedia • Path: ${esc(d.path)}</span>
+            <span class="sec-sub">${genres.length} Genre Tersedia</span>
           </div>
 
           <form id="discoverFilterForm" class="filter-bar">
@@ -739,7 +591,7 @@
               <label for="fGenre">Genre</label>
               <select id="fGenre">
                 <option value="">Semua Genre</option>
-                ${genres.map((g) => `<option value="${esc(g.slug)}" ${g.slug === genre ? "selected" : ""}>${esc(g.name)}${g.count ? ` (${g.count})` : ""}</option>`).join("")}
+                ${genres.map((g) => `<option value="${esc(g.slug)}" ${g.slug === genre ? "selected" : ""}>${esc(g.name)}</option>`).join("")}
               </select>
             </div>
             <div class="filter-field">
@@ -773,10 +625,10 @@
             </div>
             <div class="filter-field">
               <label for="fSeason">Musim</label>
-              <input id="fSeason" type="text" value="${esc(season)}" placeholder="Mis: fall-2025" />
+              <input id="fSeason" type="text" value="${esc(season)}" placeholder="Mis: fall-2026" />
             </div>
             <div class="filter-field">
-              <label for="fStudio">Studio</label>
+              <label for="fStudio">Kata Kunci</label>
               <input id="fStudio" type="text" value="${esc(studio)}" placeholder="Mis: mappa" />
             </div>
             <button type="submit" class="btn-primary">Terapkan</button>
@@ -785,7 +637,7 @@
           ${genres.length ? `
             <div class="genre-chips" style="margin-bottom:22px;">
               <a class="genre-chip ${!genre ? "active" : ""}" href="#discover">Semua</a>
-              ${genres.slice(0, 24).map((g) => `<a class="genre-chip ${g.slug === genre ? "active" : ""}" href="#discover?genre=${encodeURIComponent(g.slug)}">${esc(g.name)}${g.count ? ` (${g.count})` : ""}</a>`).join("")}
+              ${genres.slice(0, 24).map((g) => `<a class="genre-chip ${g.slug === genre ? "active" : ""}" href="#discover?genre=${encodeURIComponent(g.slug)}">${esc(g.name)}</a>`).join("")}
             </div>
           ` : ""}
 
@@ -899,8 +751,8 @@
     root.innerHTML = `
       <div class="container">
         <div class="sec-head">
-          <h2 class="sec-title">Pencarian Anime (Dual-Mode)</h2>
-          <span class="sec-sub">Pilih endpoint JSON API resmi (dengan limit kustom) atau HTML Scraper</span>
+          <h2 class="sec-title">Pencarian Anime</h2>
+          <span class="sec-sub">Cari judul anime dari katalog publik</span>
         </div>
 
         <form id="fullSearchForm" class="search-panel-card">
@@ -913,11 +765,11 @@
               <label for="sMode">Mode Pencarian</label>
               <select id="sMode">
                 <option value="json" ${mode === "json" ? "selected" : ""}>JSON API (/api/search)</option>
-                <option value="html" ${mode === "html" ? "selected" : ""}>HTML Scraper (/?s=...)</option>
+                <option value="html" ${mode === "html" ? "selected" : ""}>Katalog Lengkap</option>
               </select>
             </div>
             <div class="filter-field">
-              <label for="sLimit">Limit (JSON)</label>
+              <label for="sLimit">Limit</label>
               <select id="sLimit">
                 <option value="10" ${limit === "10" ? "selected" : ""}>10 Hasil</option>
                 <option value="20" ${limit === "20" ? "selected" : ""}>20 Hasil</option>
@@ -944,7 +796,7 @@
 
     const wrap = document.getElementById("searchResultsWrap");
     if (!q) {
-      wrap.innerHTML = `<div class="state-box">Masukkan judul anime di atas untuk mencari lewat JSON API atau HTML Scraper.</div>`;
+      wrap.innerHTML = `<div class="state-box">Masukkan judul anime di atas untuk memulai pencarian.</div>`;
       return;
     }
 
@@ -957,17 +809,17 @@
 
       const items = json.results || [];
       if (!items.length) {
-        wrap.innerHTML = `<div class="state-box">Tidak ada hasil untuk "<strong>${esc(q)}</strong>" pada mode ${esc(mode.toUpperCase())}.</div>`;
+        wrap.innerHTML = `<div class="state-box">Tidak ada hasil untuk "<strong>${esc(q)}</strong>".</div>`;
         return;
       }
 
       wrap.innerHTML = `
         <div class="sec-head">
           <h3 class="sec-title">Hasil untuk "${esc(q)}" (${items.length})</h3>
-          <span class="pill">${mode === "html" ? "HTML Scraper" : `JSON API (Limit ${limit})`}</span>
+          <span class="pill">Limit ${limit}</span>
         </div>
         <div class="anime-grid">
-          ${items.map((item) => renderCard(item, mode === "json" ? "anime" : item.type)).join("")}
+          ${items.map((item) => renderCard(item, "anime")).join("")}
         </div>
       `;
     } catch (err) {
