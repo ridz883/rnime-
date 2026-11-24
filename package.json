@@ -1,0 +1,13 @@
+{
+  "name": "sokunime-web",
+  "version": "1.0.0",
+  "description": "Web katalog & streaming anime berbasis Sokuja scraper untuk Vercel",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node lib/sokuja.js"
+  }
+}
