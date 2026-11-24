@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOKUNIME — Streaming & Katalog Anime Sub Indo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- TOP STICKY NAVBAR -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="#home" class="brand">
+        <span class="brand-mark">S</span>
+        <span class="brand-text">SOKU<strong>NIME</strong></span>
+      </a>
+
+      <nav class="nav-desktop" aria-label="Navigasi Utama">
+        <a href="#home" class="nav-item" data-route="home">Beranda</a>
+        <a href="#discover" class="nav-item" data-route="discover">Jelajah &amp; Genre</a>
+        <a href="#schedule" class="nav-item" data-route="schedule">Jadwal Rilis</a>
+        <a href="#search" class="nav-item" data-route="search">Pencarian</a>
+      </nav>
+
+      <!-- LIVE JSON TYPEAHEAD SEARCH -->
+      <div class="quick-search-wrap">
+        <form id="quickSearchForm" class="quick-search-form" autocomplete="off">
+          <svg class="qs-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            id="quickSearchInput"
+            placeholder="Cari anime cepat (JSON API)..."
+            aria-label="Cari anime"
+          />
+        </form>
+        <div id="quickSearchDropdown" class="qs-dropdown hidden"></div>
+      </div>
+
+      <button type="button" id="btnOpenUrlJump" class="btn-ghost-icon" title="Buka langsung URL atau Slug Sokuja">
+        <span>URL / Slug</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN DYNAMIC VIEWPORT -->
+  <main id="appRoot" class="app-main"></main>
+
+  <!-- URL / SLUG DIRECT JUMP MODAL -->
+  <div id="urlJumpModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Buka Langsung dari URL / Slug</h3>
+        <button type="button" id="btnCloseUrlJump" class="btn-close">✕</button>
+      </div>
+      <p class="modal-desc">
+        Tempel link halaman anime, link episode Sokuja, slug anime, atau ID episode untuk mendeteksi dan membuka otomatis.
+      </p>
+      <form id="urlJumpForm" class="modal-form">
+        <input
+          type="text"
+          id="urlJumpInput"
+          placeholder="Contoh: https://x6.sokuja.uk/anime/one-piece-subtitle-indonesia/ atau episode slug"
+          required
+        />
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">Deteksi &amp; Buka</button>
+        </div>
+      </form>
+      <div id="urlJumpFeedback" class="modal-feedback"></div>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAVIGATION -->
+  <nav class="mobile-bottom-nav" aria-label="Navigasi Mobile">
+    <a href="#home" class="mbn-item" data-route="home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </svg>
+      <span>Beranda</span>
+    </a>
+    <a href="#discover" class="mbn-item" data-route="discover">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+      </svg>
+      <span>Jelajah</span>
+    </a>
+    <a href="#schedule" class="mbn-item" data-route="schedule">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+      <span>Jadwal</span>
+    </a>
+    <a href="#search" class="mbn-item" data-route="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <span>Cari</span>
+    </a>
+  </nav>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>SOKUNIME</strong> — Powered by Sokuja Public Read-Only Scraper
+      </div>
+      <div class="footer-note">Support JSON API Search, Video Mirrors, Host Fallbacks, Playlist &amp; Comments</div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
